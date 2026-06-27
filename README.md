@@ -200,7 +200,7 @@ $2y$13$e9zuohgFZzGtbQalcn9Mz.5PJbjxobO0GMbXo8NHp3P/B42LUg0lS:darkangel
 
 ```bash
 ssh adam@orion.htb
-# Password: darkangel
+# Password: ********
 ```
 
 ---
@@ -245,7 +245,7 @@ root
 ```bash
 # User Flag
 cat /home/adam/user.txt
-# 32ebe244f540b03fbe40f9993053e0bf
+# 32ebe244f540b03fbe40f99********
 
 # Root Flag
 cat /root/root.txt
