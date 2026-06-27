@@ -569,7 +569,7 @@ CRAFT_DB_SERVER=127.0.0.1
 CRAFT_DB_PORT=3306
 CRAFT_DB_DATABASE=orion
 CRAFT_DB_USER=root
-CRAFT_DB_PASSWORD=SuperSecureCraft123Pass!</span></code></pre>
+CRAFT_DB_PASSWORD=SuperSecureCraft12****</span></code></pre>
 
             <h3>User Credential Extraction</h3>
             <pre class="sql"><code><span class="prompt">$</span> mysql -u root -p'SuperSecureCraft123Pass!' -e "SELECT username, email, password FROM orion.users;"
@@ -577,7 +577,7 @@ CRAFT_DB_PASSWORD=SuperSecureCraft123Pass!</span></code></pre>
 +----------+----------------+--------------------------------------------------------------+
 | username | email          | password                                                     |
 +----------+----------------+--------------------------------------------------------------+
-| admin    | adam@orion.htb | $2y$13$e9zuohgFZzGtbQalcn9Mz.5PJbjxobO0GMbXo8NHp3P/B42LUg0lS |
+| admin    | adam@orion.htb | $2y$13$e9zuohgFZzGtbQalcn9Mz.5PJbjxobO0GMbXo8NHp3P/B42L***** |
 +----------+----------------+--------------------------------------------------------------+</code></pre>
 
             <h3>Hash Cracking</h3>
@@ -622,7 +622,7 @@ root</span></code></pre>
             <h2>Flags</h2>
 
             <pre><code><span class="prompt">adam@orion:~$</span> cat user.txt
-<span class="output" style="color: var(--accent-green)">32ebe244f540b03fbe40f9993053e0bf</span>
+<span class="output" style="color: var(--accent-green)">32ebe244f540b03fbe40f99930*****</span>
 
 <span class="prompt">root@orion:~#</span> cat root.txt
 <span class="output" style="color: var(--accent-red)">[REDACTED — root your own box!]</span></code></pre>
